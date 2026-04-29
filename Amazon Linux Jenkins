@@ -11,12 +11,39 @@ echo "===== Start Docker ====="
 sudo systemctl start docker
 sudo systemctl enable docker
 
-echo "===== Run Jenkins ====="
+echo "===== Run Jenkins Container ====="
 sudo docker run -d \
   --name jenkins \
   -p 8080:8080 -p 50000:50000 \
   -v jenkins_home:/var/jenkins_home \
   jenkins/jenkins:lts
 
-echo "===== Jenkins Password ====="
+echo "===== Jenkins Initial Password ====="
 sudo docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+========= Workes as doc===================================================
+
+===========    if want non doc===============
+#!/bin/bash
+set -e
+
+sudo dnf update -y
+
+# Install Java
+sudo dnf install -y java-17-amazon-corretto
+
+# Add Jenkins repo
+sudo wget -O /etc/yum.repos.d/jenkins.repo \
+  https://pkg.jenkins.io/redhat-stable/jenkins.repo
+
+# Import key
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+
+# Install Jenkins
+sudo dnf install -y jenkins
+
+# Start Jenkins
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
+
+# Get password
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
