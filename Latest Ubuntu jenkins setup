@@ -1,0 +1,73 @@
+#!/bin/bash
+set -e
+
+echo "===== Updating system ====="
+sudo apt update -y
+sudo apt upgrade -y
+
+echo "===== Installing Java 21, Git, Wget ====="
+sudo apt install -y openjdk-21-jdk wget git
+
+echo "===== Verifying Java ====="
+java -version
+
+echo "===== Creating Jenkins directory ====="
+sudo mkdir -p /opt/jenkins
+cd /opt/jenkins
+
+echo "===== Downloading Jenkins WAR ====="
+sudo wget -O jenkins.war https://get.jenkins.io/war-stable/latest/jenkins.war
+
+echo "===== Creating Jenkins user ====="
+sudo useradd -m -d /var/lib/jenkins -s /bin/bash jenkins || true
+
+echo "===== Setting permissions ====="
+sudo mkdir -p /var/lib/jenkins
+sudo chown -R jenkins:jenkins /opt/jenkins
+sudo chown -R jenkins:jenkins /var/lib/jenkins
+
+echo "===== Creating systemd service ====="
+sudo tee /etc/systemd/system/jenkins.service > /dev/null <<EOF
+[Unit]
+Description=Jenkins Server
+After=network.target
+
+[Service]
+User=jenkins
+WorkingDirectory=/opt/jenkins
+
+# ✅ Explicit Jenkins home (fixes workspace path issue)
+Environment="JENKINS_HOME=/var/lib/jenkins"
+
+# ✅ Java home for tools like Maven/Gradle
+Environment="JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64"
+
+ExecStart=/usr/bin/java -DJENKINS_HOME=/var/lib/jenkins -jar /opt/jenkins/jenkins.war --httpPort=8080
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+echo "===== Reloading systemd ====="
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+
+echo "===== Starting Jenkins ====="
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
+
+echo "===== Jenkins Status ====="
+sudo systemctl status jenkins --no-pager
+
+echo "===== Getting Initial Admin Password ====="
+sleep 15
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword || echo "Password not ready yet. Wait a few seconds and run manually."
+
+echo "===== (Optional) Downloading Jenkins CLI ====="
+wget http://localhost:8080/jnlpJars/jenkins-cli.jar -O /opt/jenkins/jenkins-cli.jar || true
+
+echo "===== DONE ====="
+echo "Access Jenkins at: http://<YOUR-EC2-PUBLIC-IP>:8080"
+==============================================================================================================================================================================================
+Install: bash jenkins.sh
