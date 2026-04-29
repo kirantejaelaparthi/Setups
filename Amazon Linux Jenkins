@@ -1,26 +1,19 @@
 #!/bin/bash
 set -e
 
-echo "===== Update system ====="
 sudo dnf update -y
+sudo dnf install -y java-17-amazon-corretto wget
 
-echo "===== Install Docker ====="
-sudo dnf install -y docker
+# install jenkins repo (latest automatically)
+sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
 
-echo "===== Start Docker ====="
-sudo systemctl start docker
-sudo systemctl enable docker
+sudo dnf install -y jenkins
 
-echo "===== Run Jenkins Container ====="
-sudo docker run -d \
-  --name jenkins \
-  -p 8080:8080 -p 50000:50000 \
-  -v jenkins_home:/var/jenkins_home \
-  jenkins/jenkins:lts
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
 
-echo "===== Jenkins Initial Password ====="
-sudo docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
-========= Workes as doc===================================================
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 
 ===========    if want non doc===============
 #!/bin/bash
