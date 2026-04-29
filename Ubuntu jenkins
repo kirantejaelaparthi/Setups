@@ -1,29 +1,22 @@
 #!/bin/bash
 set -e
 
-echo "===== Update system ====="
 sudo apt update -y
+sudo apt install -y openjdk-17-jdk curl
 
-echo "===== Install Java ====="
-sudo apt install -y openjdk-17-jdk
+# get latest version dynamically
+LATEST=$(curl -s https://get.jenkins.io/debian-stable/ | grep -oP 'jenkins_\K[0-9.]+(?=_all.deb)' | sort -V | tail -1)
 
-echo "===== Download latest Jenkins ====="
-wget https://pkg.jenkins.io/debian-stable/binary/jenkins_latest_all.deb
+wget https://get.jenkins.io/debian-stable/jenkins_${LATEST}_all.deb
 
-echo "===== Install Jenkins ====="
-sudo apt install -y ./jenkins_latest_all.deb
+sudo apt install -y ./jenkins_${LATEST}_all.deb
 
-echo "===== Start Jenkins ====="
 sudo systemctl start jenkins
 sudo systemctl enable jenkins
 
-echo "===== Jenkins Status ====="
-sudo systemctl status jenkins --no-pager
-
-echo "===== Jenkins Password ====="
 sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 
-=======================================================
+=====================================================
 
 # try this first
 docker run -d -p 8080:8080 -p 50000:50000 jenkins/jenkins:lts
