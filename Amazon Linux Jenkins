@@ -1,18 +1,31 @@
 #!/bin/bash
 set -e
 
+# Update system
 sudo dnf update -y
-sudo dnf install -y java-17-amazon-corretto wget
 
-# install jenkins repo (latest automatically)
+# Install Java (Jenkins requirement)
+sudo dnf install -y java-17-amazon-corretto curl
+
+# Add Jenkins repo
 sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+
+# Import Jenkins key
 sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
 
+# Install Jenkins (latest from repo)
 sudo dnf install -y jenkins
 
+# FIX for /tmp issue (IMPORTANT - same as Ubuntu)
+echo 'JAVA_ARGS="-Djava.io.tmpdir=/var/tmp"' | sudo tee -a /etc/sysconfig/jenkins
+
+# Start Jenkins
+sudo systemctl daemon-reexec
 sudo systemctl start jenkins
 sudo systemctl enable jenkins
+sudo systemctl restart jenkins
 
+# Get initial password
 sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 
 ===========    if want non doc===============
