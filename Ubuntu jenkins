@@ -11,11 +11,14 @@ wget https://get.jenkins.io/debian-stable/jenkins_${LATEST}_all.deb
 
 sudo apt install -y ./jenkins_${LATEST}_all.deb
 
+# FIX for /tmp issue (VERY IMPORTANT)
+echo 'JAVA_ARGS="-Djava.io.tmpdir=/var/tmp"' | sudo tee -a /etc/default/jenkins
+
 sudo systemctl start jenkins
 sudo systemctl enable jenkins
+sudo systemctl restart jenkins
 
 sudo cat /var/lib/jenkins/secrets/initialAdminPassword
-
 =====================================================
 
 # try this first
