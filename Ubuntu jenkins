@@ -22,7 +22,8 @@ sudo systemctl status jenkins --no-pager
 
 echo "===== Jenkins Password ====="
 sudo cat /var/lib/jenkins/secrets/initialAdminPassword
-===========================================================================
+
+=======================================================
 
 # try this first
 docker run -d -p 8080:8080 -p 50000:50000 jenkins/jenkins:lts
