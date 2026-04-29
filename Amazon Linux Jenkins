@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+
+echo "===== Update system ====="
+sudo dnf update -y
+
+echo "===== Install Docker ====="
+sudo dnf install -y docker
+
+echo "===== Start Docker ====="
+sudo systemctl start docker
+sudo systemctl enable docker
+
+echo "===== Run Jenkins ====="
+sudo docker run -d \
+  --name jenkins \
+  -p 8080:8080 -p 50000:50000 \
+  -v jenkins_home:/var/jenkins_home \
+  jenkins/jenkins:lts
+
+echo "===== Jenkins Password ====="
+sudo docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
