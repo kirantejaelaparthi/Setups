@@ -1,0 +1,41 @@
+#!/bin/bash
+set -e
+
+echo "===== Update system ====="
+sudo apt update -y
+
+echo "===== Install Docker ====="
+sudo apt install -y docker.io
+
+echo "===== Start Docker ====="
+sudo systemctl start docker
+sudo systemctl enable docker
+
+echo "===== Run Jenkins ====="
+sudo docker run -d \
+  --name jenkins \
+  -p 8080:8080 -p 50000:50000 \
+  -v jenkins_home:/var/jenkins_home \
+  jenkins/jenkins:lts
+
+echo "===== Jenkins Password ====="
+sudo docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+===========================================================================
+
+# try this first
+docker run -d -p 8080:8080 -p 50000:50000 jenkins/jenkins:lts
+-------------------- or ----------------------
+#second one
+docker run -d -p 8080:8080 -p 50000:50000 jenkins/jenkins:lts
+-------------------- or ----------------------
+Step 1: Download Jenkins manually
+wget https://pkg.jenkins.io/debian-stable/binary/jenkins_2.452.3_all.deb
+Step 2: Install it
+sudo apt install -y ./jenkins_2.452.3_all.deb
+Step 3: Start Jenkins
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
+Step 4: Check status
+sudo systemctl status jenkins
+Step 5: Get password
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
