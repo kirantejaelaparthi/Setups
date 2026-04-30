@@ -1,0 +1,77 @@
+#!/bin/bash
+set -e
+
+echo "===== Updating system ====="
+sudo yum update -y || sudo dnf update -y
+
+echo "===== Installing dependencies ====="
+sudo yum install -y java-21-amazon-corretto wget tar || \
+sudo dnf install -y java-21-amazon-corretto wget tar
+
+echo "===== Verifying Java ====="
+java -version
+
+echo "===== Creating Tomcat user ====="
+sudo useradd -m -d /opt/tomcat -s /bin/bash tomcat || true
+
+echo "===== Downloading Tomcat ====="
+cd /opt
+sudo wget https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.108/bin/apache-tomcat-9.0.108.tar.gz
+sudo tar -xvzf apache-tomcat-9.0.108.tar.gz
+sudo mv apache-tomcat-9.0.108 tomcat
+
+echo "===== Setting permissions ====="
+sudo chown -R tomcat:tomcat /opt/tomcat
+
+echo "===== Configuring Tomcat user ====="
+sudo tee /opt/tomcat/conf/tomcat-users.xml > /dev/null <<EOF
+<tomcat-users>
+  <role rolename="manager-gui"/>
+  <role rolename="manager-script"/>
+  <user username="admin" password="StrongPass@123" roles="manager-gui,manager-script"/>
+</tomcat-users>
+EOF
+
+echo "===== Removing manager access restriction ====="
+sudo sed -i 's/127\.0\.0\.1/0\.0\.0\.0/g' /opt/tomcat/webapps/manager/META-INF/context.xml
+
+echo "===== Changing Tomcat port to 8081 (avoid Jenkins conflict) ====="
+sudo sed -i 's/port="8080"/port="8081"/' /opt/tomcat/conf/server.xml
+
+echo "===== Creating systemd service ====="
+sudo tee /etc/systemd/system/tomcat.service > /dev/null <<EOF
+[Unit]
+Description=Tomcat Server
+After=network.target
+
+[Service]
+Type=forking
+User=tomcat
+Group=tomcat
+
+Environment="JAVA_HOME=/usr/lib/jvm/java-21-amazon-corretto"
+Environment="CATALINA_PID=/opt/tomcat/temp/tomcat.pid"
+Environment="CATALINA_HOME=/opt/tomcat"
+Environment="CATALINA_BASE=/opt/tomcat"
+
+ExecStart=/opt/tomcat/bin/startup.sh
+ExecStop=/opt/tomcat/bin/shutdown.sh
+
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+echo "===== Starting Tomcat ====="
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+sudo systemctl start tomcat
+sudo systemctl enable tomcat
+
+echo "===== Tomcat Status ====="
+sudo systemctl status tomcat --no-pager
+
+echo "===== DONE ====="
+echo "Access Tomcat: http://<EC2-IP>:8081"
+echo "Manager: http://<EC2-IP>:8081/manager/html"
