@@ -1,0 +1,87 @@
+#!/bin/bash
+set -e
+
+echo "===== Updating system ====="
+sudo yum update -y || sudo dnf update -y
+
+echo "===== Installing DevOps tools ====="
+sudo yum install -y git maven unzip curl wget docker || \
+sudo dnf install -y git maven unzip curl wget docker
+
+echo "===== Installing Java 21 ====="
+sudo yum install -y java-21-amazon-corretto || \
+sudo dnf install -y java-21-amazon-corretto
+
+echo "===== Verifying installations ====="
+java -version
+git --version
+mvn -version
+docker --version
+
+echo "===== Starting Docker ====="
+sudo systemctl start docker
+sudo systemctl enable docker
+
+echo "===== Creating Jenkins directories ====="
+sudo mkdir -p /opt/jenkins
+sudo mkdir -p /var/lib/jenkins
+sudo mkdir -p /var/lib/jenkins/tmp   # 🔥 TEMP FIX INCLUDED
+
+echo "===== Downloading Jenkins WAR ====="
+cd /opt/jenkins
+sudo wget -O jenkins.war https://get.jenkins.io/war-stable/latest/jenkins.war
+
+echo "===== Creating Jenkins user ====="
+sudo useradd -m -d /var/lib/jenkins -s /bin/bash jenkins || true
+
+echo "===== Setting permissions ====="
+sudo chown -R jenkins:jenkins /opt/jenkins
+sudo chown -R jenkins:jenkins /var/lib/jenkins
+
+echo "===== Giving Jenkins Docker access ====="
+sudo usermod -aG docker jenkins
+
+echo "===== Creating systemd service ====="
+sudo tee /etc/systemd/system/jenkins.service > /dev/null <<EOF
+[Unit]
+Description=Jenkins Server
+After=network.target
+
+[Service]
+User=jenkins
+WorkingDirectory=/opt/jenkins
+Environment="JENKINS_HOME=/var/lib/jenkins"
+ExecStart=/usr/bin/java -Djava.io.tmpdir=/var/lib/jenkins/tmp -jar /opt/jenkins/jenkins.war --httpPort=8080
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+echo "===== Reloading systemd ====="
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+
+echo "===== Starting Jenkins ====="
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
+
+echo "===== Restarting Jenkins (Docker group fix) ====="
+sudo systemctl restart jenkins
+
+echo "===== Jenkins Status ====="
+sudo systemctl status jenkins --no-pager
+
+echo "===== Waiting for Jenkins to initialize ====="
+sleep 20
+
+echo "===== Initial Admin Password ====="
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword || echo "Password not ready yet"
+
+echo "===== DONE ====="
+echo "Access Jenkins at: http://<YOUR-EC2-PUBLIC-IP>:8080"
+============================================================================================================
+
+RUN by vim jenkins.sh
+bash jenkins.sh
